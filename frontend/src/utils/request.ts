@@ -2,6 +2,13 @@ import axios from 'axios'
 import type { AxiosInstance, AxiosRequestConfig, InternalAxiosRequestConfig, AxiosResponse } from 'axios'
 import { ElMessage } from 'element-plus'
 
+/** 扩展 axios 配置：silent=true 时请求失败不弹错误提示（调用方自行处理降级） */
+declare module 'axios' {
+  export interface AxiosRequestConfig {
+    silent?: boolean
+  }
+}
+
 /** 后端统一返回结构：{ code, msg, data } */
 export interface ApiResult<T = unknown> {
   code: number
@@ -69,14 +76,16 @@ service.interceptors.response.use(
       redirectToLogin()
       return Promise.reject(new Error(res.msg || '未授权'))
     }
-    ElMessage.error(res.msg || '请求失败')
+    if (!response.config.silent) {
+      ElMessage.error(res.msg || '请求失败')
+    }
     return Promise.reject(new Error(res.msg || '请求失败'))
   },
   (error) => {
     const status = error?.response?.status
     if (status === 401) {
       redirectToLogin()
-    } else {
+    } else if (!error?.config?.silent) {
       ElMessage.error(error?.response?.data?.msg || error.message || '网络异常')
     }
     return Promise.reject(error)

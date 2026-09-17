@@ -103,9 +103,9 @@ export function deleteDocument(id: number) {
 
 /* ---------------- 文档扩展（P1） ---------------- */
 
-/** 文档分块预览 */
-export function getDocumentChunks(id: number) {
-  return http.get<DocumentChunk[]>(`/documents/${id}/chunks`)
+/** 文档分块预览（P1 接口，未实现时调用方可传 { silent: true } 静默降级） */
+export function getDocumentChunks(id: number, config?: { silent?: boolean }) {
+  return http.get<DocumentChunk[]>(`/documents/${id}/chunks`, undefined, config)
 }
 
 /** 重新向量化 */
