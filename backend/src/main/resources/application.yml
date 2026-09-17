@@ -67,7 +67,7 @@ corpedia:
     chunk-overlap: 100
     top-k: 10
     rerank-top: 3
-    similarity-threshold: 0.6
+    similarity-threshold: 0.5   # 阶段3 实测校准: 0.6 会误拒 precision 问题(年假实测最高 0.5841); 非知识库问题实测最高 0.4212, 0.5 可正确区分
     collection: knowledge_chunks
 
 mybatis-plus:
