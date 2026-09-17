@@ -24,8 +24,8 @@ async function openPreview() {
   chunkContent.value = ''
   contentUnavailable.value = false
   try {
-    // 文档分块接口为 P1（后端阶段 4 提供），暂不可用时静默降级为仅元数据
-    const chunks = await getDocumentChunks(props.source.documentId, { silent: true })
+    // 文档分块接口后端阶段 4 已实现，直接拉取定位分块内容
+    const chunks = await getDocumentChunks(props.source.documentId)
     const idx = chunkIndexFromId(props.source.chunkId)
     const hit = idx != null ? chunks[idx] : undefined
     if (hit) {

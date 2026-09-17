@@ -13,6 +13,8 @@ export const useUserStore = defineStore('user', () => {
     const code = userInfo.value?.roleCode
     return code === 'SYS_ADMIN' || code === 'DEPT_ADMIN'
   })
+  /** 系统管理员：唯一可访问用户/角色/部门管理页的角色 */
+  const isSysAdmin = computed(() => userInfo.value?.roleCode === 'SYS_ADMIN')
 
   /** 登录：成功则落 token 与用户信息 */
   async function login(params: { username: string; password: string }) {
@@ -46,5 +48,5 @@ export const useUserStore = defineStore('user', () => {
     clearToken()
   }
 
-  return { token, userInfo, isLoggedIn, isAdmin, login, fetchMe, logout, reset }
+  return { token, userInfo, isLoggedIn, isAdmin, isSysAdmin, login, fetchMe, logout, reset }
 })

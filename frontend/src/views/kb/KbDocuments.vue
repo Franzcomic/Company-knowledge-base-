@@ -6,6 +6,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { UploadRequestOptions } from 'element-plus'
 import { UploadFilled, ArrowLeft } from '@element-plus/icons-vue'
+import { useUserStore } from '@/stores/user'
 import {
   listKnowledgeBases,
   listDocuments,
@@ -25,6 +26,7 @@ import {
 
 const route = useRoute()
 const router = useRouter()
+const userStore = useUserStore()
 const kbId = Number(route.params.id)
 const kbName = ref((route.query.name as string) || `知识库 #${kbId}`)
 
@@ -355,6 +357,7 @@ onUnmounted(stopAutoRefresh)
               详情
             </el-button>
             <el-button
+              v-if="userStore.isAdmin"
               link
               type="primary"
               :disabled="row.status === 'PARSING'"
@@ -362,7 +365,7 @@ onUnmounted(stopAutoRefresh)
             >
               重新向量化
             </el-button>
-            <el-button link type="warning" @click="openPermission(row)">权限设置</el-button>
+            <el-button v-if="userStore.isAdmin" link type="warning" @click="openPermission(row)">权限设置</el-button>
             <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useRouter, useRoute } from 'vue-router'
+import { computed } from 'vue'
 import { ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 
@@ -7,10 +8,21 @@ const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
-const menuItems = [
-  { key: '/chat', label: '智能问答' },
-  { key: '/kb', label: '知识库' }
-]
+/** 菜单：管理端（用户/角色/部门）仅 SYS_ADMIN 可见（阶段4 角色权限控制） */
+const menuItems = computed(() => {
+  const base = [
+    { key: '/chat', label: '智能问答' },
+    { key: '/kb', label: '知识库' }
+  ]
+  if (userStore.isSysAdmin) {
+    base.push(
+      { key: '/admin/users', label: '用户管理' },
+      { key: '/admin/roles', label: '角色管理' },
+      { key: '/admin/departments', label: '部门管理' }
+    )
+  }
+  return base
+})
 
 async function handleLogout() {
   try {

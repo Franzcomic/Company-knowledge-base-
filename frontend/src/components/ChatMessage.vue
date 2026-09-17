@@ -50,12 +50,12 @@ async function rate(value: 'UP' | 'DOWN') {
     }
   }
   try {
-    // 评价接口为后端阶段 4 提供，当前不可用时静默降级提示
-    await submitFeedback(id, { rating: value, reason: reason || undefined }, { silent: true })
+    // 评价接口后端阶段 4 已实现；失败时拦截器已统一弹错
+    await submitFeedback(id, { rating: value, reason: reason || undefined })
     ratings.set(id, value)
     ElMessage.success('感谢你的反馈')
   } catch {
-    ElMessage.warning('评价功能暂不可用，请稍后再试')
+    // 错误提示已由拦截器统一处理
   }
 }
 </script>
@@ -208,10 +208,5 @@ async function rate(value: 'UP' | 'DOWN') {
   display: flex;
   gap: 2px;
   margin-top: 2px;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-.msg-body:hover .msg-actions {
-  opacity: 1;
 }
 </style>

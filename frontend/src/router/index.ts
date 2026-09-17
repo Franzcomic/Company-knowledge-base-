@@ -32,6 +32,25 @@ const routes: RouteRecordRaw[] = [
         name: 'KbDocuments',
         component: () => import('@/views/kb/KbDocuments.vue'),
         meta: { title: '文档管理', requiresAuth: true }
+      },
+      // 管理端（阶段4 P1，仅 SYS_ADMIN 可见）
+      {
+        path: 'admin/users',
+        name: 'UserManage',
+        component: () => import('@/views/admin/UserManage.vue'),
+        meta: { title: '用户管理', requiresAuth: true, roles: ['SYS_ADMIN'] }
+      },
+      {
+        path: 'admin/roles',
+        name: 'RoleManage',
+        component: () => import('@/views/admin/RoleManage.vue'),
+        meta: { title: '角色管理', requiresAuth: true, roles: ['SYS_ADMIN'] }
+      },
+      {
+        path: 'admin/departments',
+        name: 'DepartmentManage',
+        component: () => import('@/views/admin/DepartmentManage.vue'),
+        meta: { title: '部门管理', requiresAuth: true, roles: ['SYS_ADMIN'] }
       }
     ]
   },
@@ -74,6 +93,12 @@ router.beforeEach(async (to) => {
       userStore.reset()
       return { name: 'Login' }
     }
+  }
+
+  // 角色权限校验：路由声明 roles 时，当前用户角色不在白名单内则回首页（前端“可见”维度，数据层由后端 Filter 兜底）
+  const roles = to.meta.roles as string[] | undefined
+  if (roles && userStore.userInfo && !roles.includes(userStore.userInfo.roleCode ?? '')) {
+    return { path: '/' }
   }
 
   document.title = to.meta.title ? `${to.meta.title} · 企业智能知识问答` : '企业智能知识问答'
