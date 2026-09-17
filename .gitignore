@@ -12,3 +12,8 @@
 项目文档/项目实施计划.md
 .trae/documents/项目实施方案计划.md
 plan/项目实施计划.md
+
+# backend 构建产物与运行数据
+backend/target/
+backend/volumes/
+backend/run.log

@@ -1,0 +1,85 @@
+# 依赖中间件编排(参考)。
+# 说明:
+#   - 当前开发机 MySQL 为本地 Windows 服务(MySQL80, 3306), 不走本 compose;
+#   - Milvus 独立容器已在运行(见 docker ps: milvus-standalone etcd minio), 由此 compose 或手动拉起;
+#   - LM Studio 为桌面应用, 不在此编排, 需单独 `lms server start`(端口 1234)。
+# 本文件供全新环境一键拉起 Milvus + 可选 MySQL/Redis 用。
+services:
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.25
+    container_name: milvus-etcd
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+      - ETCD_SNAPSHOT_COUNT=50000
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/etcd:/etcd
+    command: etcd -advertise-client-urls=http://127.0.0.1:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  minio:
+    image: quay.io/minio/minio
+    container_name: milvus-minio
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/minio:/minio_data
+    command: minio server /minio_data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  milvus:
+    image: milvusdb/milvus:v3.0.1
+    container_name: milvus-standalone
+    command: ["milvus", "run", "standalone"]
+    security_opt:
+    - seccomp:unconfined
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/milvus:/var/lib/milvus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 30s
+      start_period: 90s
+      timeout: 20s
+      retries: 3
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    depends_on:
+      - etcd
+      - minio
+
+  # MySQL(可选: 当前开发机用本地服务版, 故注释)
+  # mysql:
+  #   image: mysql:8.4
+  #   container_name: corpedia-mysql
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: "123456"
+  #     MYSQL_DATABASE: corpedia
+  #   ports:
+  #     - "3306:3306"
+  #   command: --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci
+  #   volumes:
+  #     - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/mysql:/var/lib/mysql
+
+  # Redis(可选, 暂未使用)
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: corpedia-redis
+  #   ports:
+  #     - "6379:6379"

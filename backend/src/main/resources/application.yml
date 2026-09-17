@@ -1,0 +1,80 @@
+server:
+  port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+
+spring:
+  application:
+    name: corpedia-backend
+
+  # 统一接口路径前缀 /api
+  mvc:
+    servlet:
+      path: /api
+
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/corpedia?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false
+    username: root
+    password: "123456"
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/schema.sql
+      encoding: UTF-8
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+  # ==== Spring AI 2.0: LM Studio(OpenAI 兼容) ====
+  ai:
+    model:
+      chat: openai
+      embedding: openai
+    openai:
+      base-url: http://localhost:1234/v1
+      api-key: lm-studio          # 本地服务不校验
+      chat:
+        model: google/gemma-4-e4b
+        options:
+          temperature: 0.2
+      embedding:
+        model: text-embedding-bge-m3
+    vectorstore:
+      milvus:
+        client:
+          host: localhost
+          port: 19530
+          databaseName: default
+        initialize-schema: true
+        embedding-dimension: 1024
+
+# 业务自定义配置
+corpedia:
+  jwt:
+    secret: "corpedia-jwt-secret-key-please-change-in-production-0123456789abcdef"
+    expire-seconds: 86400          # 24h
+  rag:
+    chunk-size: 500
+    chunk-overlap: 100
+    top-k: 10
+    rerank-top: 3
+    similarity-threshold: 0.6
+    collection: knowledge_chunks
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+
+logging:
+  level:
+    com.corpedia: debug
