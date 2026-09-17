@@ -29,6 +29,9 @@ const router = useRouter()
 const userStore = useUserStore()
 const kbId = Number(route.params.id)
 const kbName = ref((route.query.name as string) || `知识库 #${kbId}`)
+const kbDepartmentId = ref<number | null>(null)
+const canManage = computed(() => userStore.isSysAdmin || (userStore.isAdmin &&
+  kbDepartmentId.value != null && kbDepartmentId.value === userStore.userInfo?.departmentId))
 
 const MAX_MB = Number(import.meta.env.VITE_UPLOAD_MAX_MB || 10)
 const MAX_SIZE = MAX_MB * 1024 * 1024
@@ -270,10 +273,11 @@ function goBack() {
 onMounted(async () => {
   await fetchDocuments()
   // 刷新页面后从路由 query 拿不到名称时，回查知识库列表补全标题
-  if (!route.query.name) {
+  {
     try {
       const kbs = await listKnowledgeBases()
       kbName.value = kbs.find((k) => k.id === kbId)?.name || `知识库 #${kbId}`
+      kbDepartmentId.value = kbs.find((k) => k.id === kbId)?.departmentId ?? null
     } catch {
       // 保持默认标题
     }
@@ -302,7 +306,7 @@ onUnmounted(stopAutoRefresh)
       </template>
 
       <!-- 拖拽上传 -->
-      <div class="upload-area">
+      <div v-if="canManage" class="upload-area">
         <el-upload
           drag
           multiple
@@ -357,7 +361,7 @@ onUnmounted(stopAutoRefresh)
               详情
             </el-button>
             <el-button
-              v-if="userStore.isAdmin"
+              v-if="canManage"
               link
               type="primary"
               :disabled="row.status === 'PARSING'"
@@ -365,8 +369,8 @@ onUnmounted(stopAutoRefresh)
             >
               重新向量化
             </el-button>
-            <el-button v-if="userStore.isAdmin" link type="warning" @click="openPermission(row)">权限设置</el-button>
-            <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button v-if="canManage" link type="warning" @click="openPermission(row)">权限设置</el-button>
+            <el-button v-if="canManage" link type="danger" :disabled="row.status === 'PARSING'" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
         <template #empty>

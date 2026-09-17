@@ -35,12 +35,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<Result<Void>> handleAuth(AuthenticationException e) {
-        return ResponseEntity.status(HttpStatus.OK).body(Result.fail(ResultCode.UNAUTHORIZED, "未授权"));
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Result.fail(ResultCode.UNAUTHORIZED, "未授权"));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Result<Void>> handleDenied(AccessDeniedException e) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Result.fail(ResultCode.UNAUTHORIZED, "无权访问"));
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Result.fail(ResultCode.FORBIDDEN, "无权访问"));
     }
 
     @ExceptionHandler(Exception.class)

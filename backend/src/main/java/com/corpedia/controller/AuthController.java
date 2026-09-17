@@ -26,7 +26,7 @@ public class AuthController {
         this.authService = authService;
     }
 
-    @Operation(summary = "登录", description = "账号密码登录，返回 JWT token 与用户信息。内置账号：admin/zhangsan/lisi/wangwu，密码 123456")
+    @Operation(summary = "登录", description = "账号密码登录，返回 JWT token 与用户信息。演示账号仅在启用种子数据后创建，密码由 SEED_PASSWORD 配置。")
     @SecurityRequirements
     @PostMapping("/login")
     public Result<LoginResultVO> login(@Valid @RequestBody LoginRequest req) {

@@ -2,6 +2,7 @@
 // 知识库列表页（模块② P0）：列表 / 新建 / 删除，接 /api/kb
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import {
@@ -15,6 +16,9 @@ import {
 } from '@/api/kb'
 
 const router = useRouter()
+const userStore = useUserStore()
+const canManage = (departmentId?: number | null) => userStore.isSysAdmin ||
+  (userStore.isAdmin && departmentId != null && departmentId === userStore.userInfo?.departmentId)
 
 const list = ref<KnowledgeBase[]>([])
 const loading = ref(false)
@@ -79,7 +83,7 @@ const rules: FormRules = {
 function openCreate() {
   form.name = ''
   form.description = ''
-  form.departmentId = null
+  form.departmentId = userStore.isSysAdmin ? null : (userStore.userInfo?.departmentId ?? null)
   form.permissionLevel = 'PUBLIC'
   dialogVisible.value = true
 }
@@ -136,7 +140,7 @@ onMounted(() => {
       <template #header>
         <div class="kb-header">
           <span class="kb-title">知识库管理</span>
-          <el-button type="primary" @click="openCreate">新建知识库</el-button>
+          <el-button v-if="userStore.isAdmin" type="primary" @click="openCreate">新建知识库</el-button>
         </div>
       </template>
 
@@ -160,7 +164,7 @@ onMounted(() => {
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="goDocuments(row)">文档管理</el-button>
-            <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button v-if="canManage(row.departmentId)" link type="danger" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
         <template #empty>
@@ -185,7 +189,7 @@ onMounted(() => {
           />
         </el-form-item>
         <el-form-item label="所属部门">
-          <el-select v-model="form.departmentId" placeholder="不选则为全公司" clearable style="width: 100%">
+          <el-select v-model="form.departmentId" :disabled="!userStore.isSysAdmin" placeholder="不选则为全公司" clearable style="width: 100%">
             <el-option
               v-for="d in departments"
               :key="d.id"

@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -36,6 +37,8 @@ public class MilvusSchemaInitializer implements ApplicationRunner {
 
     private final MilvusClientV2 client;
     private final RagProperties rag;
+    @Value("${spring.ai.vectorstore.milvus.embedding-dimension:1024}")
+    private int embeddingDimension;
 
     public MilvusSchemaInitializer(MilvusClientV2 client, RagProperties rag) {
         this.client = client;
@@ -67,10 +70,10 @@ public class MilvusSchemaInitializer implements ApplicationRunner {
         schema.addField(AddFieldReq.builder()
                 .fieldName("metadata").dataType(DataType.JSON).build());
         schema.addField(AddFieldReq.builder()
-                .fieldName("embedding").dataType(DataType.FloatVector).dimension(1024).build());
+                .fieldName("embedding").dataType(DataType.FloatVector).dimension(embeddingDimension).build());
         client.createCollection(CreateCollectionReq.builder()
                 .collectionName(collection)
-                .dimension(1024)
+                .dimension(embeddingDimension)
                 .metricType(IndexParam.MetricType.COSINE.name())
                 .primaryFieldName("doc_id")
                 .vectorFieldName("embedding")
@@ -127,6 +130,7 @@ public class MilvusSchemaInitializer implements ApplicationRunner {
             log.info("[MilvusSchemaInitializer] 已删除 documentId={} 的 Milvus chunk", documentId);
         } catch (Exception e) {
             log.warn("[MilvusSchemaInitializer] 删除 documentId={} 的 chunk 失败: {}", documentId, e.getMessage());
+            throw new IllegalStateException("向量删除失败，请重试", e);
         }
     }
 

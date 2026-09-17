@@ -17,3 +17,22 @@ plan/项目实施计划.md
 backend/target/
 backend/volumes/
 backend/run.log
+
+# Local configuration, dependencies and generated evidence
+.env
+.env.*
+!.env.example
+**/node_modules/
+**/dist/
+**/*.tsbuildinfo
+**/target/
+.work/
+backend/storage/
+*.log
+.idea/
+.trae/
+~$*
+
+# Reviewed project documents are deliverables.
+!项目文档/系统需求分析说明书.docx
+!项目文档/系统设计说明书.docx

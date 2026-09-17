@@ -12,12 +12,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 /**
  * 幂等种子数据：角色 3、部门 3、用户 4（管理员/部门管理员/员工2）。
- * 密码统一为 123456；BCrypt 哈希运行时生成，保证每次 createOn 一致。
+ * 仅显式开启 SEED_ENABLED 后创建演示账号，密码由 SEED_PASSWORD 注入并 BCrypt 哈希。
  */
 @Component
+@ConditionalOnProperty(name = "corpedia.seed.enabled", havingValue = "true")
 public class DataSeeder implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DataSeeder.class);
@@ -26,6 +29,8 @@ public class DataSeeder implements CommandLineRunner {
     private final DepartmentMapper departmentMapper;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    @Value("${corpedia.seed.password}")
+    private String seedPassword;
 
     public DataSeeder(RoleMapper roleMapper, DepartmentMapper departmentMapper,
                       UserMapper userMapper, PasswordEncoder passwordEncoder) {
@@ -37,6 +42,9 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
+        if (seedPassword == null || seedPassword.length() < 12) {
+            throw new IllegalStateException("SEED_PASSWORD must contain at least 12 characters");
+        }
         // 表结构由 spring.sql.init 依据 db/schema.sql 自动创建
         seedRoles();
         seedDepartments();
@@ -97,7 +105,7 @@ public class DataSeeder implements CommandLineRunner {
         if (userMapper.selectCount(new QueryWrapper<User>().eq("username", username)).intValue() > 0) return;
         User u = new User();
         u.setUsername(username);
-        u.setPasswordHash(passwordEncoder.encode("123456"));
+        u.setPasswordHash(passwordEncoder.encode(seedPassword));
         u.setRealName(realName);
         u.setRoleId(roleId);
         u.setDepartmentId(deptId);

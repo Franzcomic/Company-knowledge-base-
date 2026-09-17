@@ -37,7 +37,7 @@ public class RagController {
         if (Constants.DOC_READY.equals(doc.getStatus())) {
             throw new BusinessException(ResultCode.BAD_REQUEST, "文档已入库完成，无需重复处理");
         }
-        pipeline.ingest(documentId);
+        documentService.reprocess(documentId);
         return Result.ok(new ProcessResultVO(documentId, Constants.DOC_PARSING));
     }
 }
