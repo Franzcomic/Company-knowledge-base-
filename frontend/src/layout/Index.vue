@@ -18,7 +18,8 @@ const menuItems = computed(() => {
     base.push(
       { key: '/admin/users', label: '用户管理' },
       { key: '/admin/roles', label: '角色管理' },
-      { key: '/admin/departments', label: '部门管理' }
+      { key: '/admin/departments', label: '部门管理' },
+      { key: '/admin/stats', label: '统计看板' }
     )
   }
   return base

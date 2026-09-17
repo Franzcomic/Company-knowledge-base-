@@ -51,6 +51,12 @@ const routes: RouteRecordRaw[] = [
         name: 'DepartmentManage',
         component: () => import('@/views/admin/DepartmentManage.vue'),
         meta: { title: '部门管理', requiresAuth: true, roles: ['SYS_ADMIN'] }
+      },
+      {
+        path: 'admin/stats',
+        name: 'StatsDashboard',
+        component: () => import('@/views/admin/StatsDashboard.vue'),
+        meta: { title: '统计看板', requiresAuth: true, roles: ['SYS_ADMIN'] }
       }
     ]
   },
