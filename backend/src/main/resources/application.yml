@@ -53,12 +53,15 @@ spring:
           databaseName: default
         initialize-schema: true
         embedding-dimension: 1024
+        collection-name: knowledge_chunks   # 阶段2: 显式指定集合名（默认 vector_store）
 
 # 业务自定义配置
 corpedia:
   jwt:
     secret: "corpedia-jwt-secret-key-please-change-in-production-0123456789abcdef"
     expire-seconds: 86400          # 24h
+  storage:
+    path: ./storage/documents      # 上传文件落盘目录（相对 backend/ 运行目录）
   rag:
     chunk-size: 500
     chunk-overlap: 100
@@ -78,3 +81,17 @@ mybatis-plus:
 logging:
   level:
     com.corpedia: debug
+
+# ==== Knife4j / springdoc-openapi (Boot4) ====
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui
+
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn

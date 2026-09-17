@@ -1,6 +1,8 @@
 package com.corpedia.controller;
 
 import com.corpedia.common.Result;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -17,6 +19,7 @@ import java.util.UUID;
 /**
  * AI 冒烟探针(硬骨头1): 验证 LM Studio chat / bge-m3 embedding(1024维) / Milvus 连通。
  */
+@Tag(name = "AI 冒烟探针", description = "硬骨头1 验证：LM Studio chat / bge-m3 embedding(1024维) / Milvus 连通")
 @RestController
 @RequestMapping("/probe")
 public class ProbeController {
@@ -33,6 +36,7 @@ public class ProbeController {
         this.vectorStore = vectorStore;
     }
 
+    @Operation(summary = "Chat 连通探针", description = "调用 LM Studio(gemma-4-e4b) 返回一句自我介绍")
     @GetMapping("/chat")
     public Result<String> chat() {
         String answer = chatClient.prompt("请用一句话自我介绍")
@@ -40,6 +44,7 @@ public class ProbeController {
         return Result.ok(answer);
     }
 
+    @Operation(summary = "Embedding 探针", description = "返回 bge-m3 向量维度（应为 1024）")
     @GetMapping("/embedding")
     public Result<Map<String, Object>> embedding() {
         float[] vec = embeddingModel.embed("企业内部知识库问答测试");
@@ -50,6 +55,7 @@ public class ProbeController {
         ));
     }
 
+    @Operation(summary = "Milvus 探针", description = "真实写入一条并检索，验证 Milvus v3 与 Spring AI VectorStore 连通")
     @GetMapping("/milvus")
     public Result<Map<String, Object>> milvus() {
         // 真实写入+检索, 验证 Milvus v3 与 Spring AI VectorStore 连通(硬骨头1/2 前置)

@@ -56,6 +56,8 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/login", "/actuator/health").permitAll()
+                        // Knife4j / springdoc 文档访问（静态资源也经 DispatcherServlet，受 servlet path=/api 前缀影响 → 实际为 /api/doc.html、/api/webjars/**）
+                        .requestMatchers("/doc.html", "/webjars/**", "/v3/api-docs/**", "/swagger-ui/**", "/favicon.ico").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint((req, res, ex) ->
