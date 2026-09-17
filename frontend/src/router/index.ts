@@ -26,6 +26,12 @@ const routes: RouteRecordRaw[] = [
         name: 'Kb',
         component: () => import('@/views/kb/KbView.vue'),
         meta: { title: '知识库', requiresAuth: true }
+      },
+      {
+        path: 'kb/:id/documents',
+        name: 'KbDocuments',
+        component: () => import('@/views/kb/KbDocuments.vue'),
+        meta: { title: '文档管理', requiresAuth: true }
       }
     ]
   },
