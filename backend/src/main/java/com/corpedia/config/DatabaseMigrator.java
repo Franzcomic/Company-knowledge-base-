@@ -26,6 +26,7 @@ public class DatabaseMigrator implements CommandLineRunner {
     @Override
     public void run(String... args) {
         migrateAddDocumentDepartmentId();
+        migrateAddMessageResponseMs();
     }
 
     private void migrateAddDocumentDepartmentId() {
@@ -39,6 +40,20 @@ public class DatabaseMigrator implements CommandLineRunner {
         }
         jdbc.execute("alter table document add column department_id bigint null comment '文档级所属部门(可空=全司)'");
         log.info("[DatabaseMigrator] document.department_id 已补齐");
+    }
+
+    /** 阶段5: 为 message 表补 response_ms 列（统计 avgResponseMs）。 */
+    private void migrateAddMessageResponseMs() {
+        String sql = """
+                select count(*) from information_schema.columns
+                where table_schema = database() and table_name = 'message' and column_name = 'response_ms'
+                """;
+        Integer cnt = jdbc.queryForObject(sql, Integer.class);
+        if (cnt != null && cnt > 0) {
+            return;
+        }
+        jdbc.execute("alter table message add column response_ms bigint null comment 'ASSISTANT 行 RAG 生成耗时(ms)'");
+        log.info("[DatabaseMigrator] message.response_ms 已补齐");
     }
 
     /** 占位：后续迁移在此追加（如新增表/索引），保持顺序执行。 */

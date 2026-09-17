@@ -22,5 +22,6 @@ public class Message {
     private String sources;             // JSON: [{"documentId","title","chunkId","similarity"}]
     private Double similarity;
     private Integer answered;           // 1 已回答 / 0 拒答 / null(User 行)
+    private Long responseMs;            // 阶段5: RAG 生成耗时(ms)，仅 ASSISTANT 行记录，用于 avgResponseMs
     private LocalDateTime createdAt;
 }

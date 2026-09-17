@@ -56,7 +56,9 @@ public class MessageService {
         userMsg.setContent(content);
         messageMapper.insert(userMsg);
 
+        long start = System.currentTimeMillis();
         ChatResult result = ragChat.chat(userId, conversationId, content);
+        long elapsedMs = System.currentTimeMillis() - start;
 
         Message assistant = new Message();
         assistant.setConversationId(conversationId);
@@ -64,6 +66,7 @@ public class MessageService {
         assistant.setContent(result.content());
         assistant.setSimilarity(result.similarity());
         assistant.setAnswered(result.answered() ? 1 : 0);
+        assistant.setResponseMs(elapsedMs);
         if (!result.sources().isEmpty()) {
             assistant.setSources(toJson(result.sources().stream()
                     .map(c -> new SourceVO(c.documentId(), c.title(), c.chunkId(), c.similarity()))

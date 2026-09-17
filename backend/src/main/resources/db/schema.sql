@@ -94,6 +94,7 @@ create table if not exists message (
   sources text null,                       -- JSON: [{"documentId","title","chunkId","similarity"}]
   similarity double default null,
   answered tinyint default null,           -- 1 已回答 / 0 拒答
+  response_ms bigint default null,         -- 阶段5: ASSISTANT 行 RAG 生成耗时(ms), 用于统计 avgResponseMs
   created_at datetime not null default current_timestamp,
   key idx_conversation (conversation_id)
 );
