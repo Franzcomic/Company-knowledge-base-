@@ -1,0 +1,49 @@
+package com.corpedia.config;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+
+/**
+ * 幂等 DDL 迁移（schema.sql 用 create table if not exists 无法给既有表加列）：
+ * 阶段4 为 document 表补 department_id 列。启动时检查 information_schema，缺失则 ALTER 补齐。
+ */
+@Component
+public class DatabaseMigrator implements CommandLineRunner {
+
+    private static final Logger log = LoggerFactory.getLogger(DatabaseMigrator.class);
+
+    private final JdbcTemplate jdbc;
+
+    public DatabaseMigrator(JdbcTemplate jdbc) {
+        this.jdbc = jdbc;
+    }
+
+    @Override
+    public void run(String... args) {
+        migrateAddDocumentDepartmentId();
+    }
+
+    private void migrateAddDocumentDepartmentId() {
+        String sql = """
+                select count(*) from information_schema.columns
+                where table_schema = database() and table_name = 'document' and column_name = 'department_id'
+                """;
+        Integer cnt = jdbc.queryForObject(sql, Integer.class);
+        if (cnt != null && cnt > 0) {
+            return;
+        }
+        jdbc.execute("alter table document add column department_id bigint null comment '文档级所属部门(可空=全司)'");
+        log.info("[DatabaseMigrator] document.department_id 已补齐");
+    }
+
+    /** 占位：后续迁移在此追加（如新增表/索引），保持顺序执行。 */
+    @SuppressWarnings("unused")
+    private List<String> pendingMigrations() {
+        return List.of();
+    }
+}

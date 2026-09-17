@@ -25,16 +25,37 @@ public class RagRetrieveService {
         this.vectorStore = vectorStore;
     }
 
-    /** 检索 topK 个相似片段，按相似度降序返回。 */
+    /** 检索 topK 个相似片段（无权限过滤，阶段3 兼容入口），按相似度降序返回。 */
     public List<RetrievedChunk> retrieve(String query, int topK) {
+        return retrieve(query, topK, null);
+    }
+
+    /**
+     * 检索 topK 个相似片段并按相似度降序返回。
+     *
+     * @param filterExpr Milvus 标量过滤表达式（裸键 DSL，如 department_id in [0, 1] && permission_level <= 1）；
+     *                   Spring AI 转换器自动包装为 metadata["..."]。null/空串 = 不过滤。
+     */
+    public List<RetrievedChunk> retrieve(String query, int topK, String filterExpr) {
         // 显式向量化 query（bge-m3）；VectorStore 内部亦会对 query 向量化，此处保持与检索一致
         embeddingModel.embed(query);
-        SearchRequest req = SearchRequest.builder().query(query).topK(topK).build();
-        List<Document> hits = vectorStore.similaritySearch(req);
+        SearchRequest.Builder builder = SearchRequest.builder().query(query).topK(topK);
+        if (filterExpr != null && !filterExpr.isBlank()) {
+            builder.filterExpression(filterExpr);
+        }
+        List<Document> hits = vectorStore.similaritySearch(builder.build());
         return hits.stream()
                 .map(this::toChunk)
                 .sorted(Comparator.comparingDouble(RetrievedChunk::similarity).reversed())
                 .toList();
+    }
+
+    /** 重排：取相似度最高的前 n 条（输入已按相似度降序；LM Studio 无原生 Rerank 端点，按分数截断）。 */
+    public List<RetrievedChunk> rerank(List<RetrievedChunk> top, int n) {
+        if (top == null || top.isEmpty()) {
+            return List.of();
+        }
+        return top.stream().limit(Math.max(0, n)).toList();
     }
 
     private RetrievedChunk toChunk(Document d) {

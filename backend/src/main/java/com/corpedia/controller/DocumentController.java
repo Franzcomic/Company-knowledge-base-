@@ -1,10 +1,15 @@
 package com.corpedia.controller;
 
 import com.corpedia.common.Result;
+import com.corpedia.dto.request.DocumentPermissionRequest;
+import com.corpedia.dto.response.DocumentChunkVO;
 import com.corpedia.dto.response.DocumentVO;
+import com.corpedia.dto.response.ProcessResultVO;
+import com.corpedia.common.Constants;
 import com.corpedia.security.UserContext;
 import com.corpedia.security.UserContextHolder;
 import com.corpedia.service.DocumentService;
+import com.corpedia.service.PermissionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -12,6 +17,8 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,15 +26,17 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-@Tag(name = "文档管理", description = "文档上传 / 列表 / 详情 / 删除 / 状态查询")
+@Tag(name = "文档管理", description = "文档上传 / 列表 / 详情 / 删除 / 状态查询 / chunk预览 / 重向量化 / 权限修改")
 @RestController
 @RequestMapping
 public class DocumentController {
 
     private final DocumentService documentService;
+    private final PermissionService permissionService;
 
-    public DocumentController(DocumentService documentService) {
+    public DocumentController(DocumentService documentService, PermissionService permissionService) {
         this.documentService = documentService;
+        this.permissionService = permissionService;
     }
 
     /** 上传文档（multipart，字段 file），立即返回 status=PARSING。 */
@@ -66,6 +75,34 @@ public class DocumentController {
     @DeleteMapping("/documents/{id}")
     public Result<Void> delete(@Parameter(description = "文档 id") @PathVariable Long id) {
         documentService.delete(id);
+        return Result.ok();
+    }
+
+    /* ---------------- 阶段4 P1 ---------------- */
+
+    /** 文档分块预览（来源卡片/KB 详情抽屉数据源）。 */
+    @Operation(summary = "文档分块列表", description = "按 chunk_index 升序返回文档全部分块；similarity 无检索 query 时为 null")
+    @GetMapping("/documents/{id}/chunks")
+    public Result<List<DocumentChunkVO>> chunks(@Parameter(description = "文档 id") @PathVariable Long id) {
+        return Result.ok(documentService.listChunks(id));
+    }
+
+    /** 重新向量化（SYS_ADMIN / DEPT_ADMIN）。 */
+    @Operation(summary = "重新向量化", description = "对 READY/FAILED 文档重新解析分块嵌入（PARSING 中拒绝）")
+    @PostMapping("/documents/{id}/reprocess")
+    public Result<ProcessResultVO> reprocess(@Parameter(description = "文档 id") @PathVariable Long id) {
+        permissionService.requireDocManage(UserContextHolder.get());
+        documentService.reprocess(id);
+        return Result.ok(new ProcessResultVO(id, Constants.DOC_PARSING));
+    }
+
+    /** 修改文档权限/所属部门（SYS_ADMIN / DEPT_ADMIN），异步重向量化生效。 */
+    @Operation(summary = "修改文档权限/所属部门", description = "更新后异步重新向量化；body: { permissionLevel, departmentId? }")
+    @PutMapping("/documents/{id}/permission")
+    public Result<Void> permission(@Parameter(description = "文档 id") @PathVariable Long id,
+                                   @RequestBody DocumentPermissionRequest req) {
+        permissionService.requireDocManage(UserContextHolder.get());
+        documentService.updatePermission(id, req);
         return Result.ok();
     }
 }

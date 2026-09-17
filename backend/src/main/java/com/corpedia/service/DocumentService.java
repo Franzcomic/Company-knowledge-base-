@@ -7,6 +7,8 @@ import com.corpedia.common.Constants;
 import com.corpedia.common.ResultCode;
 import com.corpedia.config.MilvusSchemaInitializer;
 import com.corpedia.config.StorageProperties;
+import com.corpedia.dto.request.DocumentPermissionRequest;
+import com.corpedia.dto.response.DocumentChunkVO;
 import com.corpedia.dto.response.DocumentVO;
 import com.corpedia.entity.KbDocument;
 import com.corpedia.entity.KnowledgeBase;
@@ -75,6 +77,7 @@ public class DocumentService {
             doc.setStatus(Constants.DOC_PARSING);
             doc.setChunkCount(0);
             doc.setPermissionLevel(kb.getPermissionLevel() == null ? Constants.LV_PUBLIC : kb.getPermissionLevel());
+            doc.setDepartmentId(kb.getDepartmentId());   // 快照知识库所属部门（可空=全司）
             doc.setUploadedBy(uploaderId);
             documentMapper.insert(doc);
 
@@ -128,6 +131,47 @@ public class DocumentService {
             throw new BusinessException(ResultCode.NOT_FOUND, "文档不存在");
         }
         return doc;
+    }
+
+    /* ---------------- 阶段4 P1：chunk 预览 / 重新向量化 / 权限修改 ---------------- */
+
+    /** 文档分块列表（数据来自 Milvus，按 chunk_index 升序）。 */
+    public List<DocumentChunkVO> listChunks(Long id) {
+        requireDoc(id);
+        return milvus.queryChunksByDocumentId(id);
+    }
+
+    /** 重新向量化（P1）：对 READY/FAILED 文档重新入库；PARSING 中拒绝避免并发管道。 */
+    public void reprocess(Long id) {
+        KbDocument doc = requireDoc(id);
+        if (Constants.DOC_PARSING.equals(doc.getStatus())) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "文档正在处理中，请稍后再试");
+        }
+        pipeline.ingest(id);
+    }
+
+    /** 修改文档权限/所属部门（P1）：更新行后异步重向量化，使 Milvus metadata 生效。 */
+    @Transactional
+    public void updatePermission(Long id, DocumentPermissionRequest req) {
+        KbDocument doc = requireDoc(id);
+        if (Constants.DOC_PARSING.equals(doc.getStatus())) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "文档正在处理中，请稍后再试");
+        }
+        if (req.permissionLevel() == null || req.permissionLevel().isBlank()) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "permissionLevel 不能为空");
+        }
+        doc.setPermissionLevel(normalizeLevel(req.permissionLevel()));
+        doc.setDepartmentId(req.departmentId());   // null = 全司
+        documentMapper.updateById(doc);
+        pipeline.ingest(id);   // 异步重嵌入（先清旧 chunk 再 add），期间按旧元数据隔离，安全方向
+    }
+
+    private String normalizeLevel(String level) {
+        String up = level.trim().toUpperCase();
+        if (!up.equals(Constants.LV_PUBLIC) && !up.equals(Constants.LV_DEPT) && !up.equals(Constants.LV_CONFIDENTIAL)) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "permissionLevel 仅支持 PUBLIC/DEPT/CONFIDENTIAL");
+        }
+        return up;
     }
 
     private String extensionOf(String filename) {

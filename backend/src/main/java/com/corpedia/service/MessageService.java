@@ -56,7 +56,7 @@ public class MessageService {
         userMsg.setContent(content);
         messageMapper.insert(userMsg);
 
-        ChatResult result = ragChat.chat(content);
+        ChatResult result = ragChat.chat(userId, conversationId, content);
 
         Message assistant = new Message();
         assistant.setConversationId(conversationId);

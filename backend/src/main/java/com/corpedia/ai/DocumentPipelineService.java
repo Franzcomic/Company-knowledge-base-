@@ -124,7 +124,11 @@ public class DocumentPipelineService {
         Map<String, Object> meta = new HashMap<>();
         meta.put(Constants.META_DOCUMENT_ID, doc.getId());
         meta.put(Constants.META_TITLE, doc.getFilename());
-        meta.put(Constants.META_DEPARTMENT_ID, kb != null && kb.getDepartmentId() != null ? kb.getDepartmentId().intValue() : 0);
+        // 文档级部门优先（权限设置可独立修改），否则回退知识库部门；全司=0
+        Integer dept = doc.getDepartmentId() != null
+                ? doc.getDepartmentId().intValue()
+                : (kb != null && kb.getDepartmentId() != null ? kb.getDepartmentId().intValue() : 0);
+        meta.put(Constants.META_DEPARTMENT_ID, dept);
         meta.put(Constants.META_PERMISSION_LEVEL, Constants.permissionLevelToInt(doc.getPermissionLevel()));
         meta.put(Constants.META_CATEGORY, kb == null ? "" : kb.getName());
         meta.put(Constants.META_SOURCE, doc.getFilename());

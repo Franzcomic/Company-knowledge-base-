@@ -16,4 +16,5 @@ public class RagProperties {
     private int rerankTop = 3;
     private double similarityThreshold = 0.6;
     private String collection = "knowledge_chunks";
+    private int historyMessages = 6;      // 阶段4: 拼入 Prompt 的最近消息条数（含 USER/ASSISTANT）
 }

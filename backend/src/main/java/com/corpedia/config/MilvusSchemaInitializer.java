@@ -1,6 +1,7 @@
 package com.corpedia.config;
 
 import com.corpedia.common.Constants;
+import com.corpedia.dto.response.DocumentChunkVO;
 import io.milvus.v2.client.MilvusClientV2;
 import io.milvus.v2.common.DataType;
 import io.milvus.v2.common.IndexParam;
@@ -9,12 +10,16 @@ import io.milvus.v2.service.collection.request.CreateCollectionReq;
 import io.milvus.v2.service.collection.request.LoadCollectionReq;
 import io.milvus.v2.service.index.request.CreateIndexReq;
 import io.milvus.v2.service.vector.request.DeleteReq;
+import io.milvus.v2.service.vector.request.QueryReq;
+import io.milvus.v2.service.vector.response.QueryResp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -122,6 +127,50 @@ public class MilvusSchemaInitializer implements ApplicationRunner {
             log.info("[MilvusSchemaInitializer] 已删除 documentId={} 的 Milvus chunk", documentId);
         } catch (Exception e) {
             log.warn("[MilvusSchemaInitializer] 删除 documentId={} 的 chunk 失败: {}", documentId, e.getMessage());
+        }
+    }
+
+    /**
+     * 查询某文档的全部分块（GET /api/documents/{id}/chunks 数据源）。
+     * 返回按 chunk_index 升序的 [chunkIndex, content]；similarity 无检索 query 不可得，置 null。
+     */
+    public List<DocumentChunkVO> queryChunksByDocumentId(Long documentId) {
+        List<DocumentChunkVO> out = new ArrayList<>();
+        try {
+            QueryResp resp = client.query(QueryReq.builder()
+                    .collectionName(rag.getCollection())
+                    .filter("metadata[\"" + Constants.META_DOCUMENT_ID + "\"] == " + documentId)
+                    .outputFields(List.of("doc_id", "content"))
+                    .build());
+            for (QueryResp.QueryResult row : resp.getQueryResults()) {
+                Map<String, Object> entity = row.getEntity();
+                String chunkId = entity.get("doc_id") == null ? null : entity.get("doc_id").toString();
+                String content = entity.get("content") == null ? null : entity.get("content").toString();
+                if (content == null) {
+                    continue;
+                }
+                out.add(new DocumentChunkVO(parseChunkIndex(chunkId), content, null));
+            }
+            out.sort(Comparator.comparingInt(DocumentChunkVO::chunkIndex));
+        } catch (Exception e) {
+            log.warn("[MilvusSchemaInitializer] 查询 documentId={} 的 chunks 失败: {}", documentId, e.getMessage());
+        }
+        return out;
+    }
+
+    /** 从确定性 chunkId（doc-{documentId}-{idx}）解析分块序号。 */
+    private Integer parseChunkIndex(String chunkId) {
+        if (chunkId == null) {
+            return null;
+        }
+        int idx = chunkId.lastIndexOf('-');
+        if (idx < 0 || idx == chunkId.length() - 1) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(chunkId.substring(idx + 1));
+        } catch (NumberFormatException e) {
+            return null;
         }
     }
 }
