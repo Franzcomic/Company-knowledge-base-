@@ -23,6 +23,7 @@ const loadingList = ref(false)
 const loadingHistory = ref(false)
 const sending = ref(false)
 const draft = ref('')
+const suggestions = ['年假如何申请？', '出差报销需要哪些材料？', '如何连接公司 VPN？', '新员工入职需要准备什么？']
 const inputRef = ref<InstanceType<typeof ElInput> | null>(null)
 const msgListRef = ref<HTMLElement | null>(null)
 
@@ -50,6 +51,7 @@ async function loadConversations() {
 }
 
 async function selectConversation(id: number) {
+  if (sending.value) return
   if (currentId.value === id && messages.value.length > 0) return
   currentId.value = id
   messages.value = []
@@ -74,6 +76,7 @@ async function selectConversation(id: number) {
 }
 
 async function createNewConversation() {
+  if (sending.value) return
   const conv = await createConversation()
   conversations.value.unshift(conv)
   currentId.value = conv.id
@@ -83,6 +86,7 @@ async function createNewConversation() {
 }
 
 async function handleDelete(id: number) {
+  if (sending.value) return
   try {
     await ElMessageBox.confirm('确定删除该会话吗？其全部问答记录将一并清除。', '删除会话', {
       type: 'warning',
@@ -111,25 +115,24 @@ async function handleDelete(id: number) {
 async function send() {
   const text = draft.value.trim()
   if (!text || sending.value) return
+  if (text.length > 2000) { ElMessage.warning('问题最多 2000 字'); return }
+  sending.value = true
   draft.value = ''
 
   // 无会话时先建会话（首条消息后后端自动填充标题）
   let convId = currentId.value
   const isFirstExchange = !messages.value.some((m) => m.role === 'ASSISTANT')
-  if (convId == null) {
-    const conv = await createConversation()
-    conversations.value.unshift(conv)
-    currentId.value = conv.id
-    convId = conv.id
-  }
-
-  messages.value.push({ uid: nextUid(), role: 'USER', content: text })
   const placeholderUid = nextUid()
-  messages.value.push({ uid: placeholderUid, role: 'ASSISTANT', content: '', loading: true })
-  sending.value = true
-  await scrollToBottom()
-
   try {
+    if (convId == null) {
+      const conv = await createConversation()
+      conversations.value.unshift(conv)
+      currentId.value = conv.id
+      convId = conv.id
+    }
+    messages.value.push({ uid: nextUid(), role: 'USER', content: text })
+    messages.value.push({ uid: placeholderUid, role: 'ASSISTANT', content: '', loading: true })
+    await scrollToBottom()
     const res = await sendMessage({ conversationId: convId, content: text })
     replaceMessage(placeholderUid, {
       uid: placeholderUid,
@@ -144,6 +147,7 @@ async function send() {
       await loadConversations()
     }
   } catch {
+    draft.value = text
     replaceMessage(placeholderUid, {
       uid: placeholderUid,
       role: 'ASSISTANT',
@@ -210,6 +214,11 @@ onMounted(loadConversations)
                 向企业知识库提问，AI 将基于内部文档生成带来源的回答
               </div>
               <div class="msg-empty-tip">Enter 发送 · Shift+Enter 换行</div>
+              <div class="suggestions" aria-label="常见问题">
+                <el-button v-for="question in suggestions" :key="question" @click="draft = question; inputRef?.focus()">
+                  {{ question }}
+                </el-button>
+              </div>
             </el-empty>
             <div v-for="m in messages" :key="m.uid" class="msg-row">
               <ChatMessage :message="m" />
@@ -226,6 +235,7 @@ onMounted(loadConversations)
             resize="none"
             :autosize="{ minRows: 3, maxRows: 6 }"
             placeholder="请输入你的问题…"
+            maxlength="2000"
             @keydown.enter.exact.prevent="send"
           />
           <div class="chat-input-bar">
@@ -247,6 +257,8 @@ onMounted(loadConversations)
 </template>
 
 <style scoped>
+.suggestions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; max-width: 600px; margin: 20px auto; }
+.suggestions .el-button { margin: 0; }
 .chat-page {
   height: 100%;
   display: flex;

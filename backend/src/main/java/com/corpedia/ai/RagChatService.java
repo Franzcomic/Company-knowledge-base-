@@ -5,6 +5,7 @@ import com.corpedia.config.RagProperties;
 import com.corpedia.entity.Message;
 import com.corpedia.mapper.MessageMapper;
 import com.corpedia.service.PermissionService;
+import com.corpedia.service.ResourceAccessService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -40,14 +41,16 @@ public class RagChatService {
     private final ChatClient chatClient;
     private final PermissionService permissionService;
     private final MessageMapper messageMapper;
+    private final ResourceAccessService access;
 
     public RagChatService(RagRetrieveService retrieveService, RagProperties rag, ChatClient.Builder chatClientBuilder,
-                          PermissionService permissionService, MessageMapper messageMapper) {
+                          PermissionService permissionService, MessageMapper messageMapper, ResourceAccessService access) {
         this.retrieveService = retrieveService;
         this.rag = rag;
         this.chatClient = chatClientBuilder.build();
         this.permissionService = permissionService;
         this.messageMapper = messageMapper;
+        this.access = access;
     }
 
     /** 一次问答：权限过滤检索 → 阈值定答 → 多轮历史+上下文生成。sources 为用于取答的引用片段。 */
@@ -60,6 +63,7 @@ public class RagChatService {
         double threshold = rag.getSimilarityThreshold();
         List<RetrievedChunk> relevant = hits.stream()
                 .filter(h -> h.similarity() >= threshold)
+                .filter(h -> access.canUseSource(h.documentId()))
                 .toList();
         if (relevant.isEmpty()) {
             log.info("[RagChat] 拒答：无片段达到阈值 {} (共检索 {} 条，最高分 {}，filter={})，耗时 {}ms",
@@ -92,7 +96,7 @@ public class RagChatService {
                 .call()
                 .content();
         if (answer == null || answer.isBlank()) {
-            answer = FALLBACK_REFUSE;
+            return new ChatResult(FALLBACK_REFUSE, List.of(), false, best);
         }
         log.info("[RagChat] 定答（相似度 {}/{}，共引用 {} 条，filter={}），耗时 {}ms",
                 best, threshold, sources.size(), filter, System.currentTimeMillis() - start);

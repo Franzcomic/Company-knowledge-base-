@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
   servlet:
     encoding:
       charset: UTF-8
@@ -15,9 +15,9 @@ spring:
       path: /api
 
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/corpedia?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
-    username: root
-    password: "123456"
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:13306/corpedia?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
+    username: ${DB_USER:corpedia}
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   sql:
@@ -37,51 +37,53 @@ spring:
       chat: openai
       embedding: openai
     openai:
-      base-url: http://localhost:1234/v1
-      api-key: lm-studio          # 本地服务不校验
+      base-url: ${AI_BASE_URL:http://localhost:1234/v1}
+      api-key: ${AI_API_KEY:lm-studio}
       chat:
-        model: google/gemma-4-e4b
+        model: ${CHAT_MODEL:google/gemma-4-e4b}
         options:
           temperature: 0.2
       embedding:
-        model: text-embedding-bge-m3
+        model: ${EMBEDDING_MODEL:text-embedding-bge-m3}
     vectorstore:
       milvus:
         client:
-          host: localhost
-          port: 19530
+          host: ${MILVUS_HOST:localhost}
+          port: ${MILVUS_PORT:29530}
           databaseName: default
         initialize-schema: true
-        embedding-dimension: 1024
-        collection-name: knowledge_chunks   # 阶段2: 显式指定集合名（默认 vector_store）
+        embedding-dimension: ${EMBEDDING_DIMENSION:1024}
+        collection-name: ${MILVUS_COLLECTION:corpedia_chunks}
 
 # 业务自定义配置
 corpedia:
   jwt:
-    secret: "corpedia-jwt-secret-key-please-change-in-production-0123456789abcdef"
+    secret: ${JWT_SECRET}
     expire-seconds: 86400          # 24h
   storage:
     path: ./storage/documents      # 上传文件落盘目录（相对 backend/ 运行目录）
+  seed:
+    enabled: ${SEED_ENABLED:false}
+    password: ${SEED_PASSWORD:}
   rag:
     chunk-size: 500
     chunk-overlap: 100
     top-k: 10
     rerank-top: 3
-    similarity-threshold: 0.5   # 阶段3 实测校准: 0.6 会误拒 precision 问题(年假实测最高 0.5841); 非知识库问题实测最高 0.4212, 0.5 可正确区分
-    collection: knowledge_chunks
+    similarity-threshold: 0.5   # 更换模型或语料后，使用测试问题集重新校准
+    collection: ${MILVUS_COLLECTION:corpedia_chunks}
     history-messages: 6         # 阶段4: 多轮历史拼入 Prompt 的消息条数
 
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   global-config:
     db-config:
       id-type: auto
 
 logging:
   level:
-    com.corpedia: debug
+    com.corpedia: info
 
 # ==== Knife4j / springdoc-openapi (Boot4) ====
 springdoc:

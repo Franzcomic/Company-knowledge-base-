@@ -15,12 +15,14 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 /**
  * AI 冒烟探针(硬骨头1): 验证 LM Studio chat / bge-m3 embedding(1024维) / Milvus 连通。
  */
 @Tag(name = "AI 冒烟探针", description = "硬骨头1 验证：LM Studio chat / bge-m3 embedding(1024维) / Milvus 连通")
 @RestController
+@ConditionalOnProperty(name = "corpedia.probes.enabled", havingValue = "true")
 @RequestMapping("/probe")
 public class ProbeController {
 

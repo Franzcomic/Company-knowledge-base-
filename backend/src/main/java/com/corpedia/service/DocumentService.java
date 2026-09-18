@@ -34,22 +34,25 @@ public class DocumentService {
     private final DocumentPipelineService pipeline;
     private final MilvusSchemaInitializer milvus;
     private final StorageProperties storage;
+    private final ResourceAccessService access;
 
     public DocumentService(KbDocumentMapper documentMapper,
                            KbService kbService,
                            DocumentPipelineService pipeline,
                            MilvusSchemaInitializer milvus,
-                           StorageProperties storage) {
+                           StorageProperties storage, ResourceAccessService access) {
         this.documentMapper = documentMapper;
         this.kbService = kbService;
         this.pipeline = pipeline;
         this.milvus = milvus;
         this.storage = storage;
+        this.access = access;
     }
 
     /** 上传：落盘 + 插入 PARSING 行 + 触发异步管道。 */
     public DocumentVO upload(Long kbId, MultipartFile file, Long uploaderId) {
         KnowledgeBase kb = kbService.requireKb(kbId);
+        access.requireManage(kb.getDepartmentId());
         if (file == null || file.isEmpty()) {
             throw new BusinessException(ResultCode.BAD_REQUEST, "文件不能为空");
         }
@@ -57,15 +60,20 @@ public class DocumentService {
         if (filename == null || filename.isBlank()) {
             throw new BusinessException(ResultCode.BAD_REQUEST, "文件名不能为空");
         }
+        if (filename.contains("/") || filename.contains("\\") || filename.contains("..") ||
+                filename.contains(":")) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "文件名不能包含路径");
+        }
         String ext = extensionOf(filename);
         if (!ALLOWED_TYPES.contains(ext)) {
             throw new BusinessException(ResultCode.BAD_REQUEST, "仅支持 md/pdf/docx/txt 格式");
         }
         try {
-            Path dir = Path.of(storage.getPath(), String.valueOf(kbId));
+            Path dir = Path.of(storage.getPath(), String.valueOf(kbId)).toAbsolutePath().normalize();
             Files.createDirectories(dir);
             String storedName = UUID.randomUUID().toString().replace("-", "") + "_" + filename;
             Path target = dir.resolve(storedName).normalize();
+            if (!target.startsWith(dir)) throw new BusinessException(ResultCode.BAD_REQUEST, "非法文件路径");
             file.transferTo(target.toAbsolutePath());
 
             KbDocument doc = new KbDocument();
@@ -89,9 +97,10 @@ public class DocumentService {
     }
 
     public List<DocumentVO> listByKb(Long kbId) {
+        kbService.requireKb(kbId);
         return documentMapper.selectList(new QueryWrapper<KbDocument>()
                         .eq("kb_id", kbId).orderByDesc("id"))
-                .stream().map(this::toVO).toList();
+                .stream().filter(access::canRead).map(this::toVO).toList();
     }
 
     /** 轮询/详情端点（硬骨头3）：返回当前 status / chunkCount。 */
@@ -109,13 +118,17 @@ public class DocumentService {
             qw.eq("kb_id", kbId);
         }
         qw.orderByDesc("id");
-        return documentMapper.selectList(qw).stream().map(this::toVO).toList();
+        return documentMapper.selectList(qw).stream().filter(access::canRead).map(this::toVO).toList();
     }
 
     /** 删除文档：先清 Milvus chunk，再删文件与行。 */
     @Transactional
     public void delete(Long id) {
         KbDocument doc = requireDoc(id);
+        requireManage(doc);
+        if (Constants.DOC_PARSING.equals(doc.getStatus())) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "文档正在处理中，请稍后再试");
+        }
         milvus.deleteByDocumentId(id);
         try {
             Files.deleteIfExists(Path.of(doc.getFilePath()));
@@ -130,6 +143,7 @@ public class DocumentService {
         if (doc == null) {
             throw new BusinessException(ResultCode.NOT_FOUND, "文档不存在");
         }
+        access.requireRead(doc);
         return doc;
     }
 
@@ -144,9 +158,12 @@ public class DocumentService {
     /** 重新向量化（P1）：对 READY/FAILED 文档重新入库；PARSING 中拒绝避免并发管道。 */
     public void reprocess(Long id) {
         KbDocument doc = requireDoc(id);
+        requireManage(doc);
         if (Constants.DOC_PARSING.equals(doc.getStatus())) {
             throw new BusinessException(ResultCode.BAD_REQUEST, "文档正在处理中，请稍后再试");
         }
+        doc.setStatus(Constants.DOC_PARSING);
+        documentMapper.updateById(doc);
         pipeline.ingest(id);
     }
 
@@ -154,6 +171,8 @@ public class DocumentService {
     @Transactional
     public void updatePermission(Long id, DocumentPermissionRequest req) {
         KbDocument doc = requireDoc(id);
+        requireManage(doc);
+        access.requireManage(req.departmentId());
         if (Constants.DOC_PARSING.equals(doc.getStatus())) {
             throw new BusinessException(ResultCode.BAD_REQUEST, "文档正在处理中，请稍后再试");
         }
@@ -162,8 +181,19 @@ public class DocumentService {
         }
         doc.setPermissionLevel(normalizeLevel(req.permissionLevel()));
         doc.setDepartmentId(req.departmentId());   // null = 全司
+        doc.setStatus(Constants.DOC_PARSING);
+        milvus.deleteByDocumentId(id);
         documentMapper.updateById(doc);
-        pipeline.ingest(id);   // 异步重嵌入（先清旧 chunk 再 add），期间按旧元数据隔离，安全方向
+        // 必须等待事务提交，避免异步线程读到旧权限；检索还会复核当前数据库权限。
+        org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                new org.springframework.transaction.support.TransactionSynchronization() {
+                    @Override public void afterCommit() { pipeline.ingest(id); }
+                });
+    }
+
+    private void requireManage(KbDocument doc) {
+        access.requireManage(kbService.requireKb(doc.getKbId()).getDepartmentId());
+        access.requireManage(doc.getDepartmentId());
     }
 
     private String normalizeLevel(String level) {

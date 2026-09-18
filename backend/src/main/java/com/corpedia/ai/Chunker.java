@@ -25,6 +25,9 @@ public class Chunker {
         List<Document> out = new ArrayList<>();
         int size = rag.getChunkSize();
         int overlap = rag.getChunkOverlap();
+        if (size <= 0 || overlap < 0 || overlap >= size) {
+            throw new IllegalArgumentException("Require chunkSize > chunkOverlap >= 0");
+        }
         int len = text.length();
         int start = 0;
         int idx = 0;

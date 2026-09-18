@@ -63,7 +63,7 @@ public class SecurityConfig {
                         .authenticationEntryPoint((req, res, ex) ->
                                 writeJson(res, HttpServletResponse.SC_UNAUTHORIZED, ResultCode.UNAUTHORIZED, "未登录或登录已过期"))
                         .accessDeniedHandler((req, res, ex) ->
-                                writeJson(res, HttpServletResponse.SC_OK, ResultCode.UNAUTHORIZED, "无权访问")))
+                                writeJson(res, HttpServletResponse.SC_FORBIDDEN, ResultCode.FORBIDDEN, "无权访问")))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable);

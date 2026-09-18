@@ -59,7 +59,7 @@ export function getConversationMessages(id: number) {
 
 /** 提问并回答：检索 → 生成 → 落库（user + assistant 两条）→ 返回答案 */
 export function sendMessage(data: { conversationId: number; content: string }) {
-  return http.post<SendMessageResult>('/messages', data)
+  return http.post<SendMessageResult>('/messages', data, { timeout: 180000 })
 }
 
 /* ---------------- 评价（P1，后端阶段 4 提供） ---------------- */

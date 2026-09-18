@@ -1,0 +1,80 @@
+[
+  {
+    "id": "architecture",
+    "title": "系统总体架构",
+    "width": 1100,
+    "height": 700
+  },
+  {
+    "id": "usecase-main",
+    "title": "系统主用例图",
+    "width": 1100,
+    "height": 700
+  },
+  {
+    "id": "usecase-employee",
+    "title": "员工端用例图",
+    "width": 1100,
+    "height": 700
+  },
+  {
+    "id": "usecase-admin",
+    "title": "管理端用例图",
+    "width": 1100,
+    "height": 700
+  },
+  {
+    "id": "flow-ingest",
+    "title": "文档入库活动图",
+    "width": 1000,
+    "height": 900
+  },
+  {
+    "id": "flow-qa",
+    "title": "智能问答活动图",
+    "width": 1000,
+    "height": 900
+  },
+  {
+    "id": "modules",
+    "title": "系统功能模块图",
+    "width": 1100,
+    "height": 560
+  },
+  {
+    "id": "class-ingest",
+    "title": "文档处理核心类图",
+    "width": 1100,
+    "height": 650
+  },
+  {
+    "id": "class-chat",
+    "title": "问答核心类图",
+    "width": 1100,
+    "height": 650
+  },
+  {
+    "id": "sequence-ingest",
+    "title": "文档入库时序图",
+    "width": 1160,
+    "height": 780
+  },
+  {
+    "id": "sequence-chat",
+    "title": "检索增强问答时序图",
+    "width": 1160,
+    "height": 780
+  },
+  {
+    "id": "access",
+    "title": "资源访问控制流程",
+    "width": 1000,
+    "height": 900
+  },
+  {
+    "id": "er",
+    "title": "业务数据库实体关系图",
+    "width": 1100,
+    "height": 940
+  }
+]
