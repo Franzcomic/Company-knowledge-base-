@@ -68,7 +68,7 @@ async function openPreview() {
         </div>
         <template v-if="!previewLoading">
           <div v-if="contentUnavailable" class="preview-empty">分块内容暂不可用</div>
-          <div v-else class="preview-content md-preview" v-html="renderMarkdown(chunkContent)"></div>
+          <div v-else class="preview-content md-render" v-html="renderMarkdown(chunkContent)"></div>
         </template>
       </div>
     </el-dialog>
@@ -124,80 +124,11 @@ async function openPreview() {
 .preview-content {
   font-size: 13px;
   line-height: 1.8;
-  white-space: pre-wrap;
-  word-break: break-word;
   padding: 12px;
   border-radius: 6px;
   background: var(--el-fill-color-lighter);
 }
-/* markdown 渲染后的预览排版 */
-.md-preview {
-  white-space: normal;
-}
-.md-preview :deep(h1),
-.md-preview :deep(h2),
-.md-preview :deep(h3),
-.md-preview :deep(h4) {
-  margin: 10px 0 6px;
-  font-weight: 600;
-  line-height: 1.4;
-}
-.md-preview :deep(p) {
-  margin: 6px 0;
-}
-.md-preview :deep(ul),
-.md-preview :deep(ol) {
-  margin: 6px 0;
-  padding-left: 22px;
-}
-.md-preview :deep(pre) {
-  background: #1e1e1e;
-  color: #d4d4d4;
-  border-radius: 6px;
-  padding: 10px 12px;
-  margin: 8px 0;
-  overflow-x: auto;
-  font-size: 13px;
-  line-height: 1.5;
-}
-.md-preview :deep(code:not([class])) {
-  background: #d9d9d9;
-  border-radius: 3px;
-  padding: 1px 5px;
-  font-size: 13px;
-  font-family: Consolas, 'Courier New', monospace;
-}
-.md-preview :deep(pre) code {
-  background: transparent;
-  padding: 0;
-  color: inherit;
-}
-.md-preview :deep(blockquote) {
-  margin: 8px 0;
-  padding: 4px 12px;
-  border-left: 3px solid var(--el-border-color);
-  color: var(--el-text-color-secondary);
-}
-.md-preview :deep(a) {
-  color: var(--el-color-primary);
-  text-decoration: none;
-}
-.md-preview :deep(table) {
-  border-collapse: collapse;
-  margin: 8px 0;
-}
-.md-preview :deep(th),
-.md-preview :deep(td) {
-  border: 1px solid var(--el-border-color-lighter);
-  padding: 5px 10px;
-}
-.md-preview :deep(th) {
-  background: #f0f0f0;
-}
-.md-preview :deep(img) {
-  max-width: 100%;
-  border-radius: 4px;
-}
+/* markdown 渲染排版见全局 styles/markdown.css (.md-render) */
 .preview-empty {
   font-size: 13px;
   color: var(--el-text-color-secondary);
