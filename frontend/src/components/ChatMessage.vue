@@ -5,6 +5,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { CaretBottom, CaretTop, CircleClose, Loading } from '@element-plus/icons-vue'
 import SourceCard from '@/components/SourceCard.vue'
 import { submitFeedback, type Source } from '@/api/conversation'
+import { renderMarkdown } from '@/utils/markdown'
 
 /** 会话内消息项（历史消息 + 本地即时渲染消息统一形态） */
 export interface ChatMessageItem {
@@ -80,7 +81,13 @@ async function rate(value: 'UP' | 'DOWN') {
         </template>
 
         <template v-else>
-          <div class="msg-text">{{ message.content }}</div>
+          <!-- 用户消息按纯文本展示，AI 回答按 Markdown 渲染 -->
+          <div
+            v-if="message.role === 'ASSISTANT'"
+            class="msg-text md-render"
+            v-html="renderMarkdown(message.content)"
+          ></div>
+          <div v-else class="msg-text">{{ message.content }}</div>
           <div v-if="message.role === 'ASSISTANT' && message.answered === false" class="msg-refused">
             未在知识库中找到足够可靠的信息（已拒答）
           </div>
@@ -170,6 +177,10 @@ async function rate(value: 'UP' | 'DOWN') {
 }
 .msg-text {
   white-space: pre-wrap;
+}
+/* markdown 渲染排版见全局 styles/markdown.css (.md-render) */
+.msg-text.md-render {
+  white-space: normal;
 }
 .msg-loading {
   display: inline-flex;

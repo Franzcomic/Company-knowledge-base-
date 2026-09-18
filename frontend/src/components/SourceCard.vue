@@ -3,6 +3,7 @@
 import { ref } from 'vue'
 import { getDocumentChunks } from '@/api/kb'
 import type { Source } from '@/api/conversation'
+import { renderMarkdown } from '@/utils/markdown'
 
 const props = defineProps<{ source: Source }>()
 
@@ -67,7 +68,7 @@ async function openPreview() {
         </div>
         <template v-if="!previewLoading">
           <div v-if="contentUnavailable" class="preview-empty">分块内容暂不可用</div>
-          <div v-else class="preview-content">{{ chunkContent }}</div>
+          <div v-else class="preview-content md-render" v-html="renderMarkdown(chunkContent)"></div>
         </template>
       </div>
     </el-dialog>
@@ -123,12 +124,11 @@ async function openPreview() {
 .preview-content {
   font-size: 13px;
   line-height: 1.8;
-  white-space: pre-wrap;
-  word-break: break-word;
   padding: 12px;
   border-radius: 6px;
   background: var(--el-fill-color-lighter);
 }
+/* markdown 渲染排版见全局 styles/markdown.css (.md-render) */
 .preview-empty {
   font-size: 13px;
   color: var(--el-text-color-secondary);

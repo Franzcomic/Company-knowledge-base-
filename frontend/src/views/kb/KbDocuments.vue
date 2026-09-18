@@ -23,6 +23,7 @@ import {
   type Department,
   type PermissionLevel
 } from '@/api/kb'
+import { renderMarkdown } from '@/utils/markdown'
 
 const route = useRoute()
 const router = useRouter()
@@ -388,7 +389,7 @@ onUnmounted(stopAutoRefresh)
             <el-tag size="small" effect="plain">#{{ c.chunkIndex }}</el-tag>
             <span class="chunk-similarity">相似度 {{ c.similarity }}</span>
           </div>
-          <div class="chunk-content">{{ c.content }}</div>
+          <div class="chunk-content md-render" v-html="renderMarkdown(c.content)"></div>
         </div>
       </div>
     </el-drawer>
@@ -481,9 +482,9 @@ onUnmounted(stopAutoRefresh)
 .chunk-content {
   font-size: 13px;
   line-height: 1.7;
-  white-space: pre-wrap;
-  word-break: break-word;
+  color: var(--el-text-color-primary);
 }
+/* markdown 渲染排版见全局 styles/markdown.css (.md-render) */
 .perm-tip {
   font-size: 12px;
   color: var(--el-text-color-secondary);
