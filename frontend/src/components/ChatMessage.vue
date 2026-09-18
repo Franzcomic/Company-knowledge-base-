@@ -1,10 +1,17 @@
 <script setup lang="ts">
 // 消息气泡（模块⑤⑥）：用户 / AI 消息、来源引用、拒答标识、赞/踩评价（P1）
 import { computed, reactive } from 'vue'
+import MarkdownIt from 'markdown-it'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { CaretBottom, CaretTop, CircleClose, Loading } from '@element-plus/icons-vue'
 import SourceCard from '@/components/SourceCard.vue'
 import { submitFeedback, type Source } from '@/api/conversation'
+
+// Markdown 解析器：禁原生 HTML，规避 XSS；返回答案由后端生成，可安全渲染
+const md = new MarkdownIt({ html: false, linkify: true })
+function renderMarkdown(content: string) {
+  return md.render(content)
+}
 
 /** 会话内消息项（历史消息 + 本地即时渲染消息统一形态） */
 export interface ChatMessageItem {
@@ -80,7 +87,13 @@ async function rate(value: 'UP' | 'DOWN') {
         </template>
 
         <template v-else>
-          <div class="msg-text">{{ message.content }}</div>
+          <!-- 用户消息按纯文本展示，AI 回答按 Markdown 渲染 -->
+          <div
+            v-if="message.role === 'ASSISTANT'"
+            class="msg-text md-body"
+            v-html="renderMarkdown(message.content)"
+          ></div>
+          <div v-else class="msg-text">{{ message.content }}</div>
           <div v-if="message.role === 'ASSISTANT' && message.answered === false" class="msg-refused">
             未在知识库中找到足够可靠的信息（已拒答）
           </div>
@@ -170,6 +183,97 @@ async function rate(value: 'UP' | 'DOWN') {
 }
 .msg-text {
   white-space: pre-wrap;
+}
+/* AI 回答：markdown 渲染后的排版 */
+.msg-text.md-body {
+  white-space: normal;
+}
+.md-body :deep(h1),
+.md-body :deep(h2),
+.md-body :deep(h3),
+.md-body :deep(h4) {
+  margin: 12px 0 6px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.md-body :deep(h1) {
+  font-size: 19px;
+}
+.md-body :deep(h2) {
+  font-size: 17px;
+}
+.md-body :deep(h3) {
+  font-size: 15px;
+}
+.md-body :deep(p) {
+  margin: 6px 0;
+}
+.md-body :deep(ul),
+.md-body :deep(ol) {
+  margin: 6px 0;
+  padding-left: 22px;
+}
+.md-body :deep(li) {
+  margin: 3px 0;
+}
+.md-body :deep(strong) {
+  font-weight: 600;
+}
+.md-body :deep(code:not([class])) {
+  background: var(--el-fill-color-light);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 13px;
+  font-family: Consolas, 'Courier New', monospace;
+}
+.md-body :deep(pre) {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin: 8px 0;
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.md-body :deep(pre) code {
+  background: transparent;
+  padding: 0;
+  color: inherit;
+}
+.md-body :deep(blockquote) {
+  margin: 8px 0;
+  padding: 4px 12px;
+  border-left: 3px solid var(--el-border-color);
+  color: var(--el-text-color-secondary);
+}
+.md-body :deep(a) {
+  color: var(--el-color-primary);
+  text-decoration: none;
+}
+.md-body :deep(a):hover {
+  text-decoration: underline;
+}
+.md-body :deep(table) {
+  border-collapse: collapse;
+  margin: 8px 0;
+}
+.md-body :deep(th),
+.md-body :deep(td) {
+  border: 1px solid var(--el-border-color-lighter);
+  padding: 5px 10px;
+}
+.md-body :deep(th) {
+  background: var(--el-fill-color-light);
+}
+.md-body :deep(hr) {
+  border: none;
+  border-top: 1px solid var(--el-border-color-lighter);
+  margin: 10px 0;
+}
+.md-body :deep(img) {
+  max-width: 100%;
+  border-radius: 4px;
 }
 .msg-loading {
   display: inline-flex;
