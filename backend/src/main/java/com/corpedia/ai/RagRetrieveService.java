@@ -38,7 +38,6 @@ public class RagRetrieveService {
      */
     public List<RetrievedChunk> retrieve(String query, int topK, String filterExpr) {
         // 显式向量化 query（bge-m3）；VectorStore 内部亦会对 query 向量化，此处保持与检索一致
-        embeddingModel.embed(query);
         SearchRequest.Builder builder = SearchRequest.builder().query(query).topK(topK);
         if (filterExpr != null && !filterExpr.isBlank()) {
             builder.filterExpression(filterExpr);

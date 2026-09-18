@@ -23,20 +23,23 @@ public class KbService {
     private final KnowledgeBaseMapper kbMapper;
     private final KbDocumentMapper documentMapper;
     private final DocumentService documentService;
+    private final ResourceAccessService access;
 
     public KbService(KnowledgeBaseMapper kbMapper, KbDocumentMapper documentMapper,
-                     @Lazy DocumentService documentService) {
+                     @Lazy DocumentService documentService, ResourceAccessService access) {
         this.kbMapper = kbMapper;
         this.documentMapper = documentMapper;
         this.documentService = documentService;
+        this.access = access;
     }
 
     public List<KbVO> list() {
         return kbMapper.selectList(new QueryWrapper<KnowledgeBase>().orderByAsc("id"))
-                .stream().map(this::toVO).toList();
+                .stream().filter(access::canRead).map(this::toVO).toList();
     }
 
     public KbVO create(KbCreateRequest req, Long creatorId) {
+        access.requireManage(req.departmentId());
         KnowledgeBase kb = new KnowledgeBase();
         kb.setName(req.name());
         kb.setDepartmentId(req.departmentId());
@@ -50,6 +53,8 @@ public class KbService {
     @Transactional
     public KbVO update(Long id, KbUpdateRequest req) {
         KnowledgeBase kb = requireKb(id);
+        access.requireManage(kb.getDepartmentId());
+        if (req.departmentId() != null) access.requireManage(req.departmentId());
         if (req.name() != null && !req.name().isBlank()) {
             kb.setName(req.name());
         }
@@ -69,7 +74,7 @@ public class KbService {
     /** 删除知识库：级联删除其下文档（文件 + Milvus chunk + 行）。 */
     @Transactional
     public void delete(Long id) {
-        requireKb(id);
+        access.requireManage(requireKb(id).getDepartmentId());
         List<KbDocument> docs = documentMapper.selectList(
                 new QueryWrapper<KbDocument>().eq("kb_id", id));
         for (KbDocument doc : docs) {
@@ -83,6 +88,7 @@ public class KbService {
         if (kb == null) {
             throw new BusinessException(ResultCode.NOT_FOUND, "知识库不存在");
         }
+        access.requireRead(kb);
         return kb;
     }
 
