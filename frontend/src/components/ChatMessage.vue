@@ -1,17 +1,11 @@
 <script setup lang="ts">
 // 消息气泡（模块⑤⑥）：用户 / AI 消息、来源引用、拒答标识、赞/踩评价（P1）
 import { computed, reactive } from 'vue'
-import MarkdownIt from 'markdown-it'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { CaretBottom, CaretTop, CircleClose, Loading } from '@element-plus/icons-vue'
 import SourceCard from '@/components/SourceCard.vue'
 import { submitFeedback, type Source } from '@/api/conversation'
-
-// Markdown 解析器：禁原生 HTML，规避 XSS；返回答案由后端生成，可安全渲染
-const md = new MarkdownIt({ html: false, linkify: true })
-function renderMarkdown(content: string) {
-  return md.render(content)
-}
+import { renderMarkdown } from '@/utils/markdown'
 
 /** 会话内消息项（历史消息 + 本地即时渲染消息统一形态） */
 export interface ChatMessageItem {
