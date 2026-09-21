@@ -14,7 +14,7 @@ class RagChatServiceTest {
     private final PermissionService permissions = mock(PermissionService.class);
     private final ChatClient.Builder builder = mock(ChatClient.Builder.class, RETURNS_DEEP_STUBS);
     private final RagProperties cfg = new RagProperties();
-    private final RagChatService service = new RagChatService(retrieve,cfg,builder,permissions,mock(MessageMapper.class),access);
+    private final RagChatService service = new RagChatService(retrieve,cfg,builder,permissions,mock(MessageMapper.class),access,mock(AmapWeatherTool.class));
 
     @Test void noEvidenceRefusesWithoutInvokingModel() {
         when(retrieve.retrieve("unknown",10,null)).thenReturn(List.of());
