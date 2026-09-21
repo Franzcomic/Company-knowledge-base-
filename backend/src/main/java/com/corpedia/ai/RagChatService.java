@@ -36,6 +36,17 @@ public class RagChatService {
             5. 全程使用中文。
             """;
 
+    /** 检索为空时的工具兜底提示：允许调用天气工具回答实时类问题，否则返回拒答文案。 */
+    private static final String TOOL_FALLBACK_SYSTEM_PROMPT = """
+            你是企业内部知识库智能助手，具备调用外部工具的能力。
+            当前企业知识库中未检索到足以回答该问题的相关片段（片段为空）。
+            规则：
+            1. 如果用户的问题是实时天气查询（如"XX 今天天气如何"），请调用 query_weather 工具获取天气后用中文如实回答。
+            2. 除天气等可通过已提供工具回答的实时查询外，其余问题不要编造，只回复以下拒答文案：
+            %s
+            3. 全程使用中文。
+            """.formatted(FALLBACK_REFUSE);
+
     private final RagRetrieveService retrieveService;
     private final RagProperties rag;
     private final ChatClient chatClient;
@@ -44,10 +55,11 @@ public class RagChatService {
     private final ResourceAccessService access;
 
     public RagChatService(RagRetrieveService retrieveService, RagProperties rag, ChatClient.Builder chatClientBuilder,
-                          PermissionService permissionService, MessageMapper messageMapper, ResourceAccessService access) {
+                          PermissionService permissionService, MessageMapper messageMapper, ResourceAccessService access,
+                          AmapWeatherTool amapWeatherTool) {
         this.retrieveService = retrieveService;
         this.rag = rag;
-        this.chatClient = chatClientBuilder.build();
+        this.chatClient = chatClientBuilder.defaultTools(amapWeatherTool).build();
         this.permissionService = permissionService;
         this.messageMapper = messageMapper;
         this.access = access;
@@ -66,11 +78,22 @@ public class RagChatService {
                 .filter(h -> access.canUseSource(h.documentId()))
                 .toList();
         if (relevant.isEmpty()) {
-            log.info("[RagChat] 拒答：无片段达到阈值 {} (共检索 {} 条，最高分 {}，filter={})，耗时 {}ms",
-                    threshold, hits.size(),
+            // 知识库无可靠片段：让 AI 自主判断——可调用天气工具回答实时查询，否则返回拒答文案
+            log.info("[RagChat] 检索片段不足，转工具兜底（最高分 {}，filter={}），耗时 {}ms",
                     hits.isEmpty() ? "N/A" : String.format("%.4f", hits.get(0).similarity()),
                     filter, System.currentTimeMillis() - start);
-            return new ChatResult(FALLBACK_REFUSE, List.of(), false, hits.isEmpty() ? 0.0 : hits.get(0).similarity());
+            String toolAnswer = chatClient.prompt()
+                    .system(TOOL_FALLBACK_SYSTEM_PROMPT)
+                    .user(question)
+                    .call()
+                    .content();
+            if (toolAnswer == null || toolAnswer.isBlank() || toolAnswer.contains(FALLBACK_REFUSE)) {
+                return new ChatResult(FALLBACK_REFUSE, List.of(), false,
+                        hits.isEmpty() ? 0.0 : hits.get(0).similarity());
+            }
+            log.info("[RagChat] 通过工具回答成功，耗时 {}ms", System.currentTimeMillis() - start);
+            return new ChatResult(toolAnswer.strip(), List.of(), true,
+                    hits.isEmpty() ? 0.0 : hits.get(0).similarity());
         }
 
         // Rerank：取相似度最高的前 rerankTop 条作为来源上下文

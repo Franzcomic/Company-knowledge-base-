@@ -74,6 +74,9 @@ corpedia:
     similarity-threshold: 0.5   # 更换模型或语料后，使用测试问题集重新校准
     collection: ${MILVUS_COLLECTION:corpedia_chunks}
     history-messages: 6         # 阶段4: 多轮历史拼入 Prompt 的消息条数
+  # AI 工具（Function Calling）配置
+  amap:
+    api-key: ${AMAP_API_KEY:9f81290f67a03d2920afdd29bfaf72c9}   # 高德开放平台 Web 服务 Key，用于天气等查询工具
 
 mybatis-plus:
   configuration:
