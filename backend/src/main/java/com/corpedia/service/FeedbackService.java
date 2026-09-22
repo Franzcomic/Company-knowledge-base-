@@ -33,6 +33,7 @@ public class FeedbackService {
         this.conversationMapper = conversationMapper;
     }
 
+    /** 提交评价：校验 rating 与消息归属，同一用户对同一消息先清旧再写新。 */
     public void submit(Long userId, Long messageId, FeedbackRequest req) {
         String rating = req.rating() == null ? "" : req.rating().trim().toUpperCase();
         if (!rating.equals("UP") && !rating.equals("DOWN")) {

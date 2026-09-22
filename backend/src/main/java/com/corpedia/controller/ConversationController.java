@@ -21,6 +21,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * 会话管理控制器：会话列表 / 新建 / 删除 / 历史消息。
+ * 所有接口仅操作当前登录用户自己的会话。
+ */
 @Tag(name = "会话管理", description = "会话列表 / 新建 / 删除 / 历史消息")
 @RestController
 @RequestMapping("/conversations")

@@ -17,6 +17,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * 知识库服务：列表 / 创建 / 更新 / 删除。
+ * 列表按当前用户可见范围过滤；写操作校验部门管理权限。
+ */
 @Service
 public class KbService {
 
@@ -33,11 +37,13 @@ public class KbService {
         this.access = access;
     }
 
+    /** 返回当前用户可见的知识库列表（按 id 升序）。 */
     public List<KbVO> list() {
         return kbMapper.selectList(new QueryWrapper<KnowledgeBase>().orderByAsc("id"))
                 .stream().filter(access::canRead).map(this::toVO).toList();
     }
 
+    /** 创建知识库：校验部门管理权限后落库，权限级别经 normalizeLevel 归一化。 */
     public KbVO create(KbCreateRequest req, Long creatorId) {
         access.requireManage(req.departmentId());
         KnowledgeBase kb = new KnowledgeBase();
@@ -50,6 +56,7 @@ public class KbService {
         return toVO(kb);
     }
 
+    /** 更新知识库：仅更新传入字段；修改部门时需同时具备新旧部门管理权限。 */
     @Transactional
     public KbVO update(Long id, KbUpdateRequest req) {
         KnowledgeBase kb = requireKb(id);
@@ -83,6 +90,7 @@ public class KbService {
         kbMapper.deleteById(id);
     }
 
+    /** 读取并校验可见性：不存在抛 404，无权读取抛 403。 */
     public KnowledgeBase requireKb(Long id) {
         KnowledgeBase kb = kbMapper.selectById(id);
         if (kb == null) {
@@ -92,6 +100,7 @@ public class KbService {
         return kb;
     }
 
+    /** 归一化权限级别：空值缺省 PUBLIC；非法值抛 400。 */
     private String normalizeLevel(String level) {
         if (level == null || level.isBlank()) {
             return Constants.LV_PUBLIC;

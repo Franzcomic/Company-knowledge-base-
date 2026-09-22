@@ -18,6 +18,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * 会话服务：会话列表 / 新建 / 删除 / 历史消息。
+ * 所有操作均限定为当前用户自己的会话（requireConversation 校验归属）。
+ */
 @Service
 public class ConversationService {
 
@@ -41,6 +45,7 @@ public class ConversationService {
                 .stream().map(this::toVO).toList();
     }
 
+    /** 新建会话：title 可空，departmentId 冗余用户当前部门（阶段4 权限用）。 */
     public ConversationVO create(Long userId, Long departmentId, ConversationCreateRequest req) {
         Conversation c = new Conversation();
         c.setUserId(userId);
@@ -68,6 +73,7 @@ public class ConversationService {
                 .stream().map(this::toVO).toList();
     }
 
+    /** 读取并校验会话归属：非本人会话或不存在一律抛 404。 */
     public Conversation requireConversation(Long userId, Long id) {
         Conversation c = conversationMapper.selectById(id);
         if (c == null || !c.getUserId().equals(userId)) {

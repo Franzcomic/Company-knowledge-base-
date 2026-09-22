@@ -15,6 +15,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 认证控制器：登录 / 登出 / 当前用户信息。
+ * 登录与登出均无需 JWT；/auth/me 需要 Bearer token。
+ */
 @Tag(name = "认证", description = "登录 / 登出 / 当前用户")
 @RestController
 @RequestMapping("/auth")

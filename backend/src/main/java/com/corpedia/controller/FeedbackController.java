@@ -15,7 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 回答评价（阶段4 P1）。
+ * 回答评价（阶段4 P1）：对 assistant 消息提交赞/踩评价。
+ * 同一用户对同一消息重复评价会覆盖（先清旧再写新）。
  */
 @Tag(name = "消息问答", description = "回答评价（赞/踩 + 可选原因）")
 @RestController

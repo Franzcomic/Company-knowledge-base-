@@ -19,6 +19,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 /**
  * AI 冒烟探针(硬骨头1): 验证 LM Studio chat / bge-m3 embedding(1024维) / Milvus 连通。
+ * 仅在 corpedia.probes.enabled=true 时装配，用于环境自检而非业务接口。
  */
 @Tag(name = "AI 冒烟探针", description = "硬骨头1 验证：LM Studio chat / bge-m3 embedding(1024维) / Milvus 连通")
 @RestController

@@ -27,11 +27,13 @@ public class UserService {
         this.roleMapper = roleMapper;
     }
 
+    /** 返回全部用户列表（含角色 code/name 与状态）。 */
     public List<UserVO> list() {
         return userMapper.selectList(new QueryWrapper<User>().orderByAsc("id"))
                 .stream().map(this::toVO).toList();
     }
 
+    /** 更新用户部门/角色/启停用：仅更新传入字段，roleId 需存在、status 限 0/1。 */
     public void update(Long id, UserUpdateRequest req) {
         User user = userMapper.selectById(id);
         if (user == null) {

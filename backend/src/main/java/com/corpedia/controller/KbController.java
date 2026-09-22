@@ -22,6 +22,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * 知识库管理控制器：知识库 CRUD。
+ * 列表按当前用户可见范围过滤；删除会级联清理该库下文档、磁盘文件与 Milvus 向量。
+ */
 @Tag(name = "知识库管理", description = "知识库 CRUD；删除会级联清理该库下文档、磁盘文件与 Milvus 向量")
 @RestController
 @RequestMapping("/kb")

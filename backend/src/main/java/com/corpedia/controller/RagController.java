@@ -16,6 +16,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 文档入库管道控制器：触发 / 重试文档解析入库。
+ * 处理为异步执行，接口立即返回 PARSING；READY 文档重复触发返回 400。
+ */
 @Tag(name = "文档入库管道", description = "触发 / 重试文档解析入库（异步）")
 @RestController
 @RequestMapping("/rag")

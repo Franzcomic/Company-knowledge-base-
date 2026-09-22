@@ -26,6 +26,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
+/**
+ * 文档管理控制器：上传 / 列表 / 详情 / 删除 / 状态查询，以及阶段4 的 chunk 预览、重向量化与权限修改。
+ * 写操作需 SYS_ADMIN 或 DEPT_ADMIN；读操作按可见范围过滤。
+ */
 @Tag(name = "文档管理", description = "文档上传 / 列表 / 详情 / 删除 / 状态查询 / chunk预览 / 重向量化 / 权限修改")
 @RestController
 @RequestMapping

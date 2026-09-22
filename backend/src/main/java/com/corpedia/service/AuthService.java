@@ -15,6 +15,9 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+/**
+ * 认证服务：登录校验并签发 JWT，/auth/me 返回当前用户信息。
+ */
 @Service
 public class AuthService {
 
@@ -31,6 +34,7 @@ public class AuthService {
         this.jwtUtil = jwtUtil;
     }
 
+    /** 登录：校验用户名/密码与账号状态，成功后签发 JWT 并返回用户信息。 */
     public LoginResultVO login(String username, String password) {
         User user = userMapper.selectOne(new QueryWrapper<User>().eq("username", username));
         if (user == null || !passwordEncoder.matches(password, user.getPasswordHash())) {
@@ -46,6 +50,7 @@ public class AuthService {
         return new LoginResultVO(token, toVO(user, role));
     }
 
+    /** 返回当前登录用户信息（依赖 JwtAuthFilter 注入的 UserContext）。 */
     public UserInfoVO me() {
         UserContext ctx = UserContextHolder.get();
         if (ctx == null) {

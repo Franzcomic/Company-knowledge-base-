@@ -16,6 +16,7 @@ import java.util.List;
 public class CorsConfig {
 
 
+    /** 注册全局 CORS 过滤器：允许所有来源/常用方法/请求头，凭据允许携带。 */
     @Bean
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();

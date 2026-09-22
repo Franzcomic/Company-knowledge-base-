@@ -9,8 +9,11 @@ import java.time.LocalDateTime;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ConversationVO(
+        /** 会话 id。 */
         Long id,
+        /** 会话标题。 */
         String title,
+        /** 创建时间。 */
         LocalDateTime createdAt
 ) {
 }

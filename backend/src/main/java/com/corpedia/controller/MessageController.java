@@ -13,6 +13,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 消息问答控制器：RAG 主链路入口。
+ * 接收提问，落库 USER 消息，检索生成后落库 ASSISTANT 答案并即时返回。
+ */
 @Tag(name = "消息问答", description = "提问 → 检索 → 生成 → 落库 → 返回（RAG 主链路）")
 @RestController
 @RequestMapping("/messages")

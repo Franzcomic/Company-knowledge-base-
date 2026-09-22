@@ -13,6 +13,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.stream.Collectors;
 
+/**
+ * 全局异常处理器：将业务异常、参数校验异常、认证/授权异常统一转换为 Result 返回体，
+ * 避免异常堆栈直接暴露给前端。
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
